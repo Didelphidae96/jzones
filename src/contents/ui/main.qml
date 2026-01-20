@@ -511,7 +511,7 @@ PlasmaCore.Dialog {
             if (config.trackLayoutPerScreen) {
                 // Restore per-screen layout mappings with validation
                 for (const [screenName, layoutIndex] of Object.entries(layoutState)) {
-                    if (typeof screenName === 'string' && isValidLayoutIndex(layoutIndex)) {
+                    if (isValidLayoutIndex(layoutIndex)) {
                         screenLayouts[screenName] = layoutIndex;
                     }
                 }
