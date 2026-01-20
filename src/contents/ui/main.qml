@@ -505,16 +505,24 @@ PlasmaCore.Dialog {
             const layoutState = JSON.parse(savedState);
             
             if (config.trackLayoutPerScreen) {
-                // Restore per-screen layout mappings
-                screenLayouts = layoutState;
+                // Restore per-screen layout mappings with validation
+                for (const screenName in layoutState) {
+                    const layoutIndex = layoutState[screenName];
+                    if (typeof layoutIndex === 'number' && layoutIndex >= 0 && layoutIndex < config.layouts.length) {
+                        screenLayouts[screenName] = layoutIndex;
+                    }
+                }
                 // Set current layout based on active screen
-                if (Workspace.activeScreen && layoutState[Workspace.activeScreen.name] !== undefined) {
-                    currentLayout = layoutState[Workspace.activeScreen.name];
+                if (Workspace.activeScreen && screenLayouts[Workspace.activeScreen.name] !== undefined) {
+                    currentLayout = screenLayouts[Workspace.activeScreen.name];
                 }
                 log("Loaded layout state: " + savedState);
             } else {
-                // Restore single global layout
-                if (layoutState.global !== undefined) {
+                // Restore single global layout with validation
+                if (layoutState.global !== undefined && 
+                    typeof layoutState.global === 'number' &&
+                    layoutState.global >= 0 && 
+                    layoutState.global < config.layouts.length) {
                     currentLayout = layoutState.global;
                     log("Loaded global layout: " + currentLayout);
                 }
