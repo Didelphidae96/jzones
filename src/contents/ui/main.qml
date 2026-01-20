@@ -495,7 +495,7 @@ PlasmaCore.Dialog {
                 log("Saved global layout: " + currentLayout);
             }
         } catch (e) {
-            console.error("KZones: Error saving layout state: " + e.message);
+            log("Error saving layout state: " + e.message);
         }
     }
 
@@ -510,18 +510,14 @@ PlasmaCore.Dialog {
             
             if (config.trackLayoutPerScreen) {
                 // Restore per-screen layout mappings with validation
-                for (const screenName in layoutState) {
-                    if (!layoutState.hasOwnProperty(screenName)) continue;
-                    const layoutIndex = layoutState[screenName];
+                for (const [screenName, layoutIndex] of Object.entries(layoutState)) {
                     if (typeof screenName === 'string' && isValidLayoutIndex(layoutIndex)) {
                         screenLayouts[screenName] = layoutIndex;
                     }
                 }
                 // Set current layout based on active screen
                 const activeScreenName = Workspace.activeScreen?.name;
-                if (activeScreenName && 
-                    screenLayouts.hasOwnProperty(activeScreenName) && 
-                    isValidLayoutIndex(screenLayouts[activeScreenName])) {
+                if (activeScreenName && isValidLayoutIndex(screenLayouts[activeScreenName])) {
                     currentLayout = screenLayouts[activeScreenName];
                 }
                 log("Loaded layout state: " + savedState);
