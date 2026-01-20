@@ -130,7 +130,10 @@ PlasmaCore.Dialog {
         activeScreen = Workspace.activeScreen;
         clientArea = Workspace.clientArea(KWin.FullScreenArea, activeScreen, Workspace.currentDesktop);
         displaySize = Workspace.virtualScreenSize;
-        currentLayout = getCurrentLayout();
+        const newLayout = getCurrentLayout();
+        if (currentLayout !== newLayout) {
+            setCurrentLayout(newLayout);
+        }
     }
 
     function isPointInside(x, y, geometry) {
@@ -739,10 +742,12 @@ PlasmaCore.Dialog {
     }
 
     Component.onCompleted: {
-        // refresh client area
-        refreshClientArea();
+        // load configuration and saved state first
         mainDialog.loadConfig();
         mainDialog.loadLayoutState();
+        
+        // then refresh client area (which may call getCurrentLayout)
+        refreshClientArea();
 
         // match all clients to zones and connect signals
         for (let i = 0; i < Workspace.stackingOrder.length; i++) {
