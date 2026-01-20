@@ -479,6 +479,58 @@ PlasmaCore.Dialog {
     function setCurrentLayout(layout) {
         if (config.trackLayoutPerScreen) screenLayouts[Workspace.activeScreen.name] = layout
         currentLayout = layout
+        saveLayoutState()
+    }
+
+    function saveLayoutState() {
+        try {
+            if (config.trackLayoutPerScreen) {
+                // Save per-screen layout mappings
+                const layoutState = JSON.stringify(screenLayouts);
+                KWin.writeConfig("savedLayoutState", layoutState);
+                log("Saved layout state: " + layoutState);
+            } else {
+                // Save single global layout
+                KWin.writeConfig("savedLayoutState", JSON.stringify({ "global": currentLayout }));
+                log("Saved global layout: " + currentLayout);
+            }
+        } catch (e) {
+            log("Error saving layout state: " + e.message);
+        }
+    }
+
+    function isValidLayoutIndex(index) {
+        return typeof index === 'number' && index >= 0 && index < config.layouts.length;
+    }
+
+    function loadLayoutState() {
+        try {
+            const savedState = KWin.readConfig("savedLayoutState", "{}");
+            const layoutState = JSON.parse(savedState);
+            
+            if (config.trackLayoutPerScreen) {
+                // Restore per-screen layout mappings with validation
+                for (const [screenName, layoutIndex] of Object.entries(layoutState)) {
+                    if (isValidLayoutIndex(layoutIndex)) {
+                        screenLayouts[screenName] = layoutIndex;
+                    }
+                }
+                // Set current layout based on active screen
+                const activeScreenName = Workspace.activeScreen?.name;
+                if (activeScreenName && isValidLayoutIndex(screenLayouts[activeScreenName])) {
+                    currentLayout = screenLayouts[activeScreenName];
+                }
+                log("Loaded layout state: " + savedState);
+            } else {
+                // Restore single global layout with validation
+                if (isValidLayoutIndex(layoutState.global)) {
+                    currentLayout = layoutState.global;
+                    log("Loaded global layout: " + currentLayout);
+                }
+            }
+        } catch (e) {
+            log("Could not load layout state (using defaults): " + e.message);
+        }
     }
 
     function connectSignals(client) {
@@ -690,6 +742,7 @@ PlasmaCore.Dialog {
         // refresh client area
         refreshClientArea();
         mainDialog.loadConfig();
+        mainDialog.loadLayoutState();
 
         // match all clients to zones and connect signals
         for (let i = 0; i < Workspace.stackingOrder.length; i++) {
