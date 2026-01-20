@@ -479,6 +479,49 @@ PlasmaCore.Dialog {
     function setCurrentLayout(layout) {
         if (config.trackLayoutPerScreen) screenLayouts[Workspace.activeScreen.name] = layout
         currentLayout = layout
+        saveLayoutState()
+    }
+
+    function saveLayoutState() {
+        try {
+            if (config.trackLayoutPerScreen) {
+                // Save per-screen layout mappings
+                const layoutState = JSON.stringify(screenLayouts);
+                KWin.writeConfig("savedLayoutState", layoutState);
+                log("Saved layout state: " + layoutState);
+            } else {
+                // Save single global layout
+                KWin.writeConfig("savedLayoutState", JSON.stringify({ "global": currentLayout }));
+                log("Saved global layout: " + currentLayout);
+            }
+        } catch (e) {
+            console.error("KZones: Error saving layout state: " + e.message);
+        }
+    }
+
+    function loadLayoutState() {
+        try {
+            const savedState = KWin.readConfig("savedLayoutState", "{}");
+            const layoutState = JSON.parse(savedState);
+            
+            if (config.trackLayoutPerScreen) {
+                // Restore per-screen layout mappings
+                screenLayouts = layoutState;
+                // Set current layout based on active screen
+                if (Workspace.activeScreen && layoutState[Workspace.activeScreen.name] !== undefined) {
+                    currentLayout = layoutState[Workspace.activeScreen.name];
+                }
+                log("Loaded layout state: " + savedState);
+            } else {
+                // Restore single global layout
+                if (layoutState.global !== undefined) {
+                    currentLayout = layoutState.global;
+                    log("Loaded global layout: " + currentLayout);
+                }
+            }
+        } catch (e) {
+            log("Could not load layout state (using defaults): " + e.message);
+        }
     }
 
     function connectSignals(client) {
@@ -690,6 +733,7 @@ PlasmaCore.Dialog {
         // refresh client area
         refreshClientArea();
         mainDialog.loadConfig();
+        mainDialog.loadLayoutState();
 
         // match all clients to zones and connect signals
         for (let i = 0; i < Workspace.stackingOrder.length; i++) {
