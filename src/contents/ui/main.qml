@@ -499,6 +499,10 @@ PlasmaCore.Dialog {
         }
     }
 
+    function isValidLayoutIndex(index) {
+        return typeof index === 'number' && index >= 0 && index < config.layouts.length;
+    }
+
     function loadLayoutState() {
         try {
             const savedState = KWin.readConfig("savedLayoutState", "{}");
@@ -507,22 +511,23 @@ PlasmaCore.Dialog {
             if (config.trackLayoutPerScreen) {
                 // Restore per-screen layout mappings with validation
                 for (const screenName in layoutState) {
+                    if (!layoutState.hasOwnProperty(screenName)) continue;
                     const layoutIndex = layoutState[screenName];
-                    if (typeof layoutIndex === 'number' && layoutIndex >= 0 && layoutIndex < config.layouts.length) {
+                    if (typeof screenName === 'string' && isValidLayoutIndex(layoutIndex)) {
                         screenLayouts[screenName] = layoutIndex;
                     }
                 }
                 // Set current layout based on active screen
-                if (Workspace.activeScreen && screenLayouts[Workspace.activeScreen.name] !== undefined) {
-                    currentLayout = screenLayouts[Workspace.activeScreen.name];
+                const activeScreenName = Workspace.activeScreen?.name;
+                if (activeScreenName && 
+                    screenLayouts.hasOwnProperty(activeScreenName) && 
+                    isValidLayoutIndex(screenLayouts[activeScreenName])) {
+                    currentLayout = screenLayouts[activeScreenName];
                 }
                 log("Loaded layout state: " + savedState);
             } else {
                 // Restore single global layout with validation
-                if (layoutState.global !== undefined && 
-                    typeof layoutState.global === 'number' &&
-                    layoutState.global >= 0 && 
-                    layoutState.global < config.layouts.length) {
+                if (isValidLayoutIndex(layoutState.global)) {
                     currentLayout = layoutState.global;
                     log("Loaded global layout: " + currentLayout);
                 }
